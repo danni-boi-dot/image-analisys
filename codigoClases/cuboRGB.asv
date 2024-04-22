@@ -1,0 +1,65 @@
+clc;
+clear all;
+close all;
+warning off all
+
+%DEFINIENDO CLASES DEL CUBO
+
+RGB = [1 0 0; 0 1 0; 0 0 1]
+CMY = [0 1 1; 1 1 0; 1 0 1]
+GRAY = [20:200 20:200 20:200; 20:200 20:200 20:200; 20:200 20:200 20:200]
+
+%GRAFICANDO LOS DIFERENTES MODELOS DEL CUBO
+
+figure(1)
+plot3(RGB(1,:),RGB(2,:),RGB(3,:),'ro','MarkerSize',10,'MarkerFaceColor','r')
+grid on
+hold on
+plot3(CMY(1,:),CMY(2,:),CMY(3,:),'go','MarkerSize',10,'MarkerFaceColor','g')
+plot3(CMY(1,:),CMY(2,:),CMY(3,:),'go','MarkerSize',10,'MarkerFaceColor','g')
+legend('RGB','CMY', 'GRAY')
+
+%PROBANDO EL ESPACIO DE COLORES
+a = imread('peppers.png');
+
+figure(2)
+roja=a;
+roja(:,:,1);
+roja(:,:,2)=0;
+roja(:,:,3)=0;
+subplot(2,3,1)
+imshow(roja)
+title('roja')
+
+verde=a;
+verde(:,:,1)=0;
+verde(:,:,2);
+verde(:,:,3)=0;
+subplot(2,3,2)
+imshow(verde)
+title('verde')
+
+azul=a;
+azul(:,:,1)=0;
+azul(:,:,2)=0;
+azul(:,:,3);
+subplot(2,3,3)
+imshow(azul)
+title('azul')
+
+cyan = verde + azul;
+subplot(2,3,4)
+imshow(cyan)
+title('cyan')
+
+magenta = roja + azul;
+subplot(2,3,5)
+imshow(magenta)
+title('magenta')
+
+amarillo = verde + roja;
+subplot(2,3,6)
+imshow(amarillo)
+title('amarillo')
+
+disp("fin del proceso")
