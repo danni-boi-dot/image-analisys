@@ -1,5 +1,5 @@
 % Leer la imagen
-imagen = imread("imagenes\city.jpg");
+imagen = imread("imagenes\contorno.png");
 
 % Convertir la imagen a escala de grises si es necesario
 if size(imagen, 3) == 3
