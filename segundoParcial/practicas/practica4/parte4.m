@@ -48,8 +48,14 @@ for i = 1:num_filas_bloques
         % Cuantificar el bloque utilizando la matriz de cuantificación JPEG
         dct_bloque_cuantificado = round(dct_bloque ./ matriz_cuantificacion);
         
+        % Escaneo Zigzag
+        dct_bloque_cuantificado_zigzag = zigzag_scan(dct_bloque_cuantificado);
+        
+        % Reformar el vector a una matriz de 8x8
+        dct_bloque_cuantificado_matriz = reshape(dct_bloque_cuantificado_zigzag, [bloque_tamano, bloque_tamano]);
+        
         % Almacenar los coeficientes cuantificados en la matriz de salida
-        coeficientes_dct_cuantificados((i-1)*bloque_tamano+1:i*bloque_tamano, (j-1)*bloque_tamano+1:j*bloque_tamano) = dct_bloque_cuantificado;
+        coeficientes_dct_cuantificados((i-1)*bloque_tamano+1:i*bloque_tamano, (j-1)*bloque_tamano+1:j*bloque_tamano) = dct_bloque_cuantificado_matriz;
     end
 end
 
@@ -64,3 +70,39 @@ title('Imagen Cuantificada (DCT JPEG)');
 
 % Guardar la imagen cuantificada si se desea
 %imwrite(uint8(coeficientes_dct_cuantificados), 'imagen_cuantificada.jpg');
+
+% Función para el escaneo Zigzag
+function salida = zigzag_scan(entrada)
+    dimension = size(entrada);
+    salida = zeros(1, dimension(1) * dimension(2));
+    i = 1;
+    j = 1;
+    for k = 1:length(salida)
+        salida(k) = entrada(i, j);
+        if mod(i + j, 2) == 0 % Dirección hacia arriba
+            if j < dimension(2)
+                j = j + 1;
+            elseif i < dimension(1)
+                i = i + 1;
+            end
+            if i > 1 && j <= dimension(2)
+                i = i - 1;
+            elseif j < dimension(2)
+                j = j + 1;
+            end
+        else % Dirección hacia abajo
+            if i < dimension(1)
+                i = i + 1;
+            elseif j < dimension(2)
+                j = j + 1;
+            end
+            if j > 1 && i <= dimension(1)
+                j = j - 1;
+            elseif i < dimension(1)
+                i = i + 1;
+            end
+        end
+    end
+end
+
+
