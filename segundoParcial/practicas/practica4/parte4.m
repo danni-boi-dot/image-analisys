@@ -48,14 +48,8 @@ for i = 1:num_filas_bloques
         % Cuantificar el bloque utilizando la matriz de cuantificación JPEG
         dct_bloque_cuantificado = round(dct_bloque ./ matriz_cuantificacion);
         
-        % Escaneo Zigzag
-        dct_bloque_cuantificado_zigzag = zigzag_scan(dct_bloque_cuantificado);
-        
-        % Reformar el vector a una matriz de 8x8
-        dct_bloque_cuantificado_matriz = reshape(dct_bloque_cuantificado_zigzag, [bloque_tamano, bloque_tamano]);
-        
         % Almacenar los coeficientes cuantificados en la matriz de salida
-        coeficientes_dct_cuantificados((i-1)*bloque_tamano+1:i*bloque_tamano, (j-1)*bloque_tamano+1:j*bloque_tamano) = dct_bloque_cuantificado_matriz;
+        coeficientes_dct_cuantificados((i-1)*bloque_tamano+1:i*bloque_tamano, (j-1)*bloque_tamano+1:j*bloque_tamano) = dct_bloque_cuantificado;
     end
 end
 
@@ -68,41 +62,47 @@ subplot(1, 2, 2);
 imshow(uint8(coeficientes_dct_cuantificados));
 title('Imagen Cuantificada (DCT JPEG)');
 
-% Guardar la imagen cuantificada si se desea
-%imwrite(uint8(coeficientes_dct_cuantificados), 'imagen_cuantificada.jpg');
+% Llamar a la función de escaneo zigzag para la matriz de coeficientes cuantificados
+coeficientes_escaneados = zigzag_escaneo(coeficientes_dct_cuantificados);
 
-% Función para el escaneo Zigzag
-function salida = zigzag_scan(entrada)
-    dimension = size(entrada);
-    salida = zeros(1, dimension(1) * dimension(2));
+% Mostrar los coeficientes cuantificados escaneados
+disp('Coeficientes cuantificados escaneados en orden zigzag');
+
+% Crear una función para el escaneo zigzag
+function salida = zigzag_escaneo(entrada)
+    [filas, columnas] = size(entrada);
+    salida = zeros(1, filas * columnas);
+    % Inicializar índices
+    idx = 1;
     i = 1;
     j = 1;
-    for k = 1:length(salida)
-        salida(k) = entrada(i, j);
-        if mod(i + j, 2) == 0 % Dirección hacia arriba
-            if j < dimension(2)
-                j = j + 1;
-            elseif i < dimension(1)
+    % Bandera para indicar dirección de escaneo
+    ascendente = true;
+    while idx <= filas * columnas
+        salida(idx) = entrada(i, j);
+        idx = idx + 1;
+        if ascendente
+            if j == columnas
                 i = i + 1;
-            end
-            if i > 1 && j <= dimension(2)
+                ascendente = false;
+            elseif i == 1
+                j = j + 1;
+                ascendente = false;
+            else
                 i = i - 1;
-            elseif j < dimension(2)
                 j = j + 1;
             end
-        else % Dirección hacia abajo
-            if i < dimension(1)
+        else
+            if i == filas
+                j = j + 1;
+                ascendente = true;
+            elseif j == 1
                 i = i + 1;
-            elseif j < dimension(2)
-                j = j + 1;
-            end
-            if j > 1 && i <= dimension(1)
+                ascendente = true;
+            else
+                i = i + 1;
                 j = j - 1;
-            elseif i < dimension(1)
-                i = i + 1;
             end
         end
     end
 end
-
-
