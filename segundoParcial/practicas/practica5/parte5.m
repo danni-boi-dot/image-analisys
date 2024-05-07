@@ -1,6 +1,6 @@
 function contorno()
     % Leer la imagen
-    imgc = imread('imagenes/contorno.png');
+    imgc = imread('imagenes/gojo.jpg');
     
     % Convertir a binario si no lo es
     if numel(size(imgc))>2
@@ -36,14 +36,24 @@ function contorno()
     bordes = img_dilatada & ~img_erodida;
     bordes = ~bordes;
     
-    % Mostrar la imagen original y los bordes
-    subplot(1, 2, 1);
+    % Calcular la inversa de la versión erosionada
+    img_ero_inversa = ~img_erodida;
+    
+    % Realizar la operación lógica AND entre la imagen original y la inversa de la versión erosionada
+    img_and = img & img_ero_inversa;
+    
+    % Mostrar la imagen original, los bordes y la operación AND en subplots separados
+    subplot(1, 3, 1);
     imshow(imgc);
     title('Imagen original');
     
-    subplot(1, 2, 2);
+    subplot(1, 3, 2);
     imshow(bordes);
     title('Bordes');
+    
+    subplot(1, 3, 3);
+    imshow(img_and);
+    title('img original & img inversa');
 end
 
 function img_dilatada = dilatacion(img, se)
