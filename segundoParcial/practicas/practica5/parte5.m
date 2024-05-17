@@ -1,9 +1,9 @@
 function contorno()
     % Leer la imagen
-    imgc = imread('imagenes/gojo.jpg');
+    imgc = imread('imagenes/gatito.jpg');
     
     % Convertir a binario si no lo es
-    if numel(size(imgc))>2
+    if numel(size(imgc)) > 2
         img = rgb2gray(imgc);
     end
     img = imbinarize(img);
@@ -13,6 +13,9 @@ function contorno()
     disp('1. 4 vecinos');
     disp('2. 8 vecinos');
     disp('3. 4 esquinas');
+    disp('4. Círculo');
+    disp('5. Cuadrado');
+    disp('6. Octágono');
     opcion = input('Introduzca el número de opción: ');
     
     % Crear el elemento estructural según la opción
@@ -23,6 +26,15 @@ function contorno()
             se = ones(3); % 8 vecinos
         case 3
             se = [1 0 1; 0 1 0; 1 0 1]; % 4 esquinas
+        case 4
+            radius = 1; % Radio del círculo
+            se = strel('disk', radius).Neighborhood; % Elemento estructural circular
+        case 5
+            width = 3; % Tamaño del lado del cuadrado
+            se = strel('square', width).Neighborhood; % Elemento estructural cuadrado
+        case 6
+            radius = 3; % Radio del octágono
+            se = strel('octagon', radius).Neighborhood; % Elemento estructural octagonal
         otherwise
             disp('Opción no válida');
             return;
