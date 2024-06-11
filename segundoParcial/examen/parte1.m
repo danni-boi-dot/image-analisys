@@ -1,39 +1,41 @@
-% Leer la imagen
-img = imread('gatito.jpg');
+% Definir el alfabeto y su mapeo
+alfabeto = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ ';
+mapeo = containers.Map({'A','B','C','D','E','F','G','H','I','J','K','L','M','N','Ñ','O','P','Q','R','S','T','U','V','W','X','Y','Z',' '}, 1:28);
 
-% Convertir la imagen a escala de grises si es necesario
-if size(img, 3) == 3
-    img = rgb2gray(img);
-end
+% Entrada
+entrada = 'Abraham Daniel';
 
-% Generar y mostrar el histograma de la imagen original
-figure;
-histogram(img, 256, 'Normalization', 'probability');
-title('Histograma');
-xlabel('Niveles de Gris');
-ylabel('Probabilidad');
-
-% Aplanar la imagen en un vector
-img = img(:);
+% Convertir la entrada a mayúsculas y mapear a valores
+entrada = upper(entrada);
+valores = arrayfun(@(x) mapeo(x), entrada);
 
 % Calcular histograma
-histograma = histcounts(double(img), 0:256);
+histograma = histcounts(valores, 1:29);
 
 % Calcular probabilidades
-probabilidades = histograma / numel(img);
+probabilidades = histograma / numel(valores);
 
-% Crear una matriz con los valores de los píxeles y sus probabilidades
-nodes = [probabilidades' (0:255)'];
+% Crear una matriz con los valores de los caracteres y sus probabilidades
+nodes = [probabilidades' (1:28)'];
 
 % Ordenar la matriz por probabilidades de mayor a menor
 nodes = sortrows(nodes, -1);
 
+% Generar y mostrar el histograma de la entrada
+figure;
+histogram(valores, 1:29, 'Normalization', 'probability');
+xticks(1:28);
+xticklabels(alfabeto);
+title('Histograma de la entrada');
+xlabel('Caracteres');
+ylabel('Probabilidad');
+
 % Guardar las probabilidades ordenadas en un archivo txt
 fid = fopen('parte3.txt', 'w');
-for i = 1:256
-    % Calcular el número de bits necesarios para representar el píxel
+for i = 1:28
+    % Calcular el número de bits necesarios para representar el carácter
     bits = ceil(log2(i));
-    fprintf(fid, 'Pixel: %d, Probabilidad: %f, Bits: %d\n', nodes(i, 2), nodes(i, 1), bits);
+    fprintf(fid, 'Caracter: %s, Probabilidad: %f, Bits: %d\n', alfabeto(nodes(i, 2)), nodes(i, 1), bits);
 end
 
 % Mostrar las probabilidades iniciales
@@ -41,7 +43,7 @@ disp('Probabilidades ordenadas:');
 disp(nodes(:, 1)');
 
 % Calcular el número total de símbolos en la fuente de información
-n = numel(img);
+n = numel(valores);
 
 % Calcular el porcentaje de agrupamiento
 porcentaje_agrupamiento = (2/n) * (n - 1) * 100;
@@ -66,9 +68,9 @@ while size(nodes, 1) > 2
     % Guardar las probabilidades ordenadas en un archivo txt después de cada suma
     fprintf(fid, '\nDespués de sumar, las probabilidades ordenadas son:\n');
     for i = 1:size(nodes, 1)
-        % Calcular el número de bits necesarios para representar el píxel
+        % Calcular el número de bits necesarios para representar el carácter
         bits = ceil(log2(nodes(i, 2)));
-        fprintf(fid, 'Pixel: %d, Probabilidad: %f, Bits: %d\n', nodes(i, 2), nodes(i, 1), bits);
+        fprintf(fid, 'Caracter: %d, Probabilidad: %f, Bits: %d\n', nodes(i, 2), nodes(i, 1), bits);
     end
     
     % Mostrar las probabilidades restantes
@@ -81,10 +83,10 @@ fclose(fid);
 disp('Probabilidades ordenadas guardadas en ".txt"');
 
 % Calcular la entropía de la fuente de información
-entropia = -sum(probabilidades .* log2(probabilidades));
+entropia = -sum(probabilidades(probabilidades > 0) .* log2(probabilidades(probabilidades > 0)));
 
 % Calcular la longitud media de los códigos de Huffman
-longitud_media = sum(probabilidades .* ceil(log2(1 ./ probabilidades)));
+longitud_media = sum(probabilidades(probabilidades > 0) .* ceil(log2(1 ./ probabilidades(probabilidades > 0))));
 
 % Calcular la eficiencia del código de Huffman
 eficiencia = entropia / longitud_media;

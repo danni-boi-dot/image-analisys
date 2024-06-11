@@ -1,11 +1,5 @@
 function contorno()
-    % Leer la imagen
-    imgc = imread('imagenes/gatito.jpg');
-    
-    % Convertir a binario si no lo es
-    if numel(size(imgc)) > 2
-        img = rgb2gray(imgc);
-    end
+
     img = imbinarize(img);
     
     % Preguntar al usuario qué opción quiere
@@ -27,10 +21,10 @@ function contorno()
         case 3
             se = [1 0 1; 0 1 0; 1 0 1]; % 4 esquinas
         case 4
-            radius = 1; % Radio del círculo
+            radius = 5; % Radio del círculo
             se = strel('disk', radius).Neighborhood; % Elemento estructural circular
         case 5
-            width = 3; % Tamaño del lado del cuadrado
+            width = 6; % Tamaño del lado del cuadrado
             se = strel('square', width).Neighborhood; % Elemento estructural cuadrado
         case 6
             radius = 3; % Radio del octágono
@@ -46,15 +40,15 @@ function contorno()
     
     % Obtener los bordes
     bordes = img_dilatada & ~img_erodida;
-    bordes = ~bordes;
     
-    % Calcular la inversa de la versión erosionada
-    img_ero_inversa = ~img_erodida;
+    % Crear una imagen RGB de bordes
+    bordes_rgb = cat(3, bordes, bordes, bordes); % Repetir el canal para formar una imagen RGB
     
-    % Realizar la operación lógica AND entre la imagen original y la inversa de la versión erosionada
-    img_and = img & img_ero_inversa;
+    % Superponer los bordes en la imagen original
+    imgc_with_borders = imgc;
+    imgc_with_borders(bordes_rgb) = 255; % Asignar el color blanco a los bordes
     
-    % Mostrar la imagen original, los bordes y la operación AND en subplots separados
+    % Mostrar la imagen original, los bordes y la imagen con los bordes superpuestos
     subplot(1, 3, 1);
     imshow(imgc);
     title('Imagen original');
@@ -64,8 +58,8 @@ function contorno()
     title('Bordes');
     
     subplot(1, 3, 3);
-    imshow(img_and);
-    title('img original & img inversa');
+    imshow(imgc_with_borders);
+    title('Imagen con bordes superpuestos');
 end
 
 function img_dilatada = dilatacion(img, se)

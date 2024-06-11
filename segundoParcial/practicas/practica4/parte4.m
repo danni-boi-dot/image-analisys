@@ -1,293 +1,122 @@
-% Cargar la imagen
-disp('Cargando la imagen...');
-img = imread('imagenes\gatito.jpg');
+% Leer la imagen
+imagen = imread('imagenes\dinamarca.jpg');
 
-% Guardar el tamaño del archivo original
-info_original = dir('imagenes\gatito.jpg');
-tamano_original = info_original.bytes;
+% Obtener las dimensiones de la imagen
+[filas, columnas] = size(imagen);
 
-% Convertir la imagen a escala de grises si es necesario
-disp('Convirtiendo la imagen a escala de grises si es necesario...');
-if size(img, 3) == 3
-    imagen_gris = rgb2gray(img);
-else
-    imagen_gris = img;
-end
+% Pedir al usuario el número de bloque
+bloque_num = input(['Ingrese el número de bloque 8x8 (entre 1 y ' num2str(filas/8 * columnas/8) '): ']);
 
-% Convertir la imagen a tipo double
-disp('Convirtiendo la imagen a tipo double...');
-imagen_gris = double(imagen_gris);
+% Calcular las coordenadas del bloque en la imagen original
+bloque_fila = mod(bloque_num - 1, filas/8) * 8 + 1;
+bloque_columna = floor((bloque_num - 1) / (filas/8)) * 8 + 1;
 
-% Tamaño del bloque para la DCT
-bloque_tamano = 8;
+% Obtener el bloque 8x8 de la imagen
+bloque = imagen(bloque_fila:bloque_fila+7, bloque_columna:bloque_columna+7)
 
-% Tamaño de la imagen
-[filas, columnas] = size(imagen_gris);
+% Mostrar el bloque original
+imshow(bloque);
+title(['Bloquesito: ' num2str(bloque_num)]);
 
-% Calcular el número de bloques en filas y columnas
-num_filas_bloques = floor(filas / bloque_tamano);
-num_columnas_bloques = floor(columnas / bloque_tamano);
+% Aplicar la DCT al bloque
+dct_bloque = dct2(double(bloque));
 
-% Preasignar matriz para almacenar los coeficientes de la DCT cuantificados
-coeficientes_dct_cuantificados = zeros(filas, columnas);
+% Cuantificar los coeficientes de la DCT
+Q = [16 11 10 16 24 40 51 61;
+     12 12 14 19 26 58 60 55;
+     14 13 16 24 40 57 69 56;
+     14 17 22 29 51 87 80 62;
+     18 22 37 56 68 109 103 77;
+     24 35 55 64 81 104 113 92;
+     49 64 78 87 103 121 120 101;
+     72 92 95 98 112 100 103 99];
 
-% Matriz de cuantificación JPEG estándar
-matriz_cuantificacion = [
-    16,  11,  10,  16,  24,  40,  51,  61;
-    12,  12,  14,  19,  26,  58,  60,  55;
-    14,  13,  16,  24,  40,  57,  69,  56;
-    14,  17,  22,  29,  51,  87,  80,  62;
-    18,  22,  37,  56,  68, 109, 103,  77;
-    24,  35,  55,  64,  81, 104, 113,  92;
-    49,  64,  78,  87, 103, 121, 120, 101;
-    72,  92,  95,  98, 112, 100, 103,  99
-];
+dct_quantizado = round(dct_bloque ./ Q);
 
-% Iterar sobre cada bloque en la imagen
-disp('Aplicando la DCT y cuantificando los bloques...');
-for i = 1:num_filas_bloques
-    for j = 1:num_columnas_bloques
-        % Obtener el bloque actual
-        bloque = imagen_gris((i-1)*bloque_tamano+1:i*bloque_tamano, (j-1)*bloque_tamano+1:j*bloque_tamano);
-        
-        % Aplicar la Transformada Discreta del Coseno (DCT)
-        dct_bloque = dct2(bloque);
-        
-        % Cuantificar el bloque utilizando la matriz de cuantificación JPEG
-        dct_bloque_cuantificado = round(dct_bloque ./ matriz_cuantificacion);
-        
-        % Almacenar los coeficientes cuantificados en la matriz de salida
-        coeficientes_dct_cuantificados((i-1)*bloque_tamano+1:i*bloque_tamano, (j-1)*bloque_tamano+1:j*bloque_tamano) = dct_bloque_cuantificado;
+% Función en zigzag
+indices_zigzag = [1 2 6 7 15 16 28 29;
+                  3 5 8 14 17 27 30 43;
+                  4 9 13 18 26 31 42 44;
+                  10 12 19 25 32 41 45 54;
+                  11 20 24 33 40 46 53 55;
+                  21 23 34 39 47 52 56 61;
+                  22 35 38 48 51 57 60 62;
+                  36 37 49 50 58 59 63 64];
+
+zigzag_vector = dct_quantizado(indices_zigzag);
+
+% Crear una tabla HTML con los resultados en zigzag
+html = '<html><head><title>Resultados en zigzag</title><style>';
+html = strcat(html, 'table {width: 50%; border-collapse: collapse;}');
+html = strcat(html, 'th, td {border: 1px solid black; padding: 8px; text-align: center;}');
+html = strcat(html, 'th {background-color: #f2f2f2;}');
+html = strcat(html, '</style></head><body><table><tr><th>Índice:Valor</th></tr>');
+
+for i = 1:8
+    html = strcat(html, '<tr>');
+    for j = 1:8
+        indice = indices_zigzag((i-1)*8 + j);
+        valor = zigzag_vector((i-1)*8 + j);
+        html = strcat(html, '<td>', num2str(indice), ': ', num2str(valor), '</td>');
     end
+    html = strcat(html, '</tr>');
 end
 
-% Llamar a la función de escaneo zigzag para la matriz de cuantificados
-disp('Realizando el escaneo zigzag...');
-coeficientes_escaneados = zigzag_escaneo(coeficientes_dct_cuantificados);
+html = strcat(html, '</table></body></html>');
 
-% Llamar a la función de codificación de Huffman
-disp('Codificando los coeficientes escaneados con Huffman...');
-codigos_huffman = huffman_codificacion(coeficientes_escaneados);
+% Guardar la tabla HTML en un archivo
+fid = fopen('resultados_zigzag.html', 'w');
+fprintf(fid, '%s', html);
+fclose(fid);
 
-% Decodificación de Huffman y reconstrucción de la matriz de coeficientes
-disp('Decodificando los coeficientes Huffman...');
-coeficientes_decodificados = huffman_decodificacion(codigos_huffman, [num_filas_bloques, num_columnas_bloques]);
+disp(['Bloque ' num2str(bloque_num) ' procesado. Puedes ver los resultados en el archivo "resultados_zigzag.html".']);
 
-% Reconstrucción de la matriz de coeficientes
-coeficientes_reconstruidos = zigzag_inverso(coeficientes_decodificados, [filas, columnas]);
+% Crear una tabla HTML con los valores diferentes de 0 y sus complementos a 2
+html = '<html><head><title>Valores en zigzag y complemento a 2</title><style>';
+html = strcat(html, 'table {width: 50%; border-collapse: collapse;}');
+html = strcat(html, 'th, td {border: 1px solid black; padding: 8px; text-align: center;}');
+html = strcat(html, 'th {background-color: #f2f2f2;}');
+html = strcat(html, '</style></head><body><table><tr><th>Índice</th><th>Valor</th><th>Complemento a 2</th></tr>');
 
-% Escritura del Archivo JPEG
-disp('Escribiendo el archivo JPEG...');
-escribir_archivo_JPEG(codigos_huffman);
+% Almacenar los valores en una matriz temporal para su ordenación
+valores = [];
 
-% Guardar el tamaño del archivo comprimido
-info_comprimido = dir('imagen_codificada.bin');
-tamano_comprimido = info_comprimido.bytes;
-
-% Comparar los tamaños de los archivos
-disp(['Tamaño del archivo original: ', num2str(tamano_original), ' bytes']);
-disp(['Tamaño del archivo comprimido: ', num2str(tamano_comprimido), ' bytes']);
-if tamano_comprimido < tamano_original
-    disp('La imagen se comprimióctamente.');
-else
-    disp('La imagen no se comprimió correctamente.');
-end
-
-% Verificar la imagen después del proceso de compresión
-disp('Verificando la imagen después del proceso de compresión...');
-imagen_despues_compresion = imread('imagen_codificada.bin');
-subplot(1,2,1);
-imshow(img);
-title('Imagen Original');
-
-subplot(1,2,2);
-imshow(imagen_despues_compresion); % Convertir la DCT de nuevo a uint8 para visualizarla correctamente
-title('Imagen JPEG');
-
-% Aplicación de la IDCT a cada bloque
-disp('Aplicando la IDCT a los bloques...');
-imagen_reconstruida = zeros(filas, columnas);
-for i = 1:num_filas_bloques
-    for j = 1:num_columnas_bloques
-        % Obtener el bloque actual
-        bloque_coeficientes = coeficientes_reconstruidos{i, j};
+for i = 1:numel(indices_zigzag)
+    indice = indices_zigzag(i);
+    valor = zigzag_vector(i);
+    
+    if valor ~= 0
+        binario = dec2bin(abs(valor), 8);
         
-        % Aplicar la IDCT al bloque de coeficientes
-        bloque_reconstruido = idct2(bloque_coeficientes);
-        
-        % Almacenar el bloque reconstruido en la imagen final
-        imagen_reconstruida((i-1)*bloque_tamano+1:i*bloque_tamano, (j-1)*bloque_tamano+1:j*bloque_tamano) = bloque_reconstruido;
-    end
-end
-
-% Ajustar los valores reconstruidos para que estén en el rango correcto
-imagen_reconstruida(imagen_reconstruida < 0) = 0;
-imagen_reconstruida(imagen_reconstruida > 255) = 255;
-
-% Convertir la imagen reconstruida a tipo uint8
-imagen_reconstruida = uint8(imagen_reconstruida);
-
-% Guardar la imagen reconstruida
-imwrite(imagen_reconstruida, 'imagen_reconstruida.jpg');
-
-% Verificar la imagen reconstruida
-figure;
-imshow(imagen_reconstruida);
-title('Imagen Reconstruida');
-
-% Añadir la función IDCT
-function salida = idct2(entrada)
-    salida = idct(idct(entrada')')';
-end
-
-function coeficientes_decodificados = huffman_decodificacion(codigos_huffman, dimensiones)
-    % Inicializar la matriz de coeficientes decodificados
-    coeficientes_decodificados = cell(dimensiones(1), dimensiones(2));
-    
-    % Recorrer los códigos Huffman y decodificarlos
-    idx = 1;
-    for i = 1:dimensiones(1)
-        for j = 1:dimensiones(2)
-            % Verificar si idx excede la longitud de codigos_huffman
-            if idx > length(codigos_huffman)
-                break; % Salir del bucle si idx excede la longitud de codigos_huffman
-            end
-            
-            coeficientes_decodificados{i, j} = codigos_huffman{idx};
-            idx = idx + 1;
-        end
-    end
-end
-
-function matriz_reconstruida = zigzag_inverso(coeficientes_escaneados, dimensiones)
-    % Inicializar la matriz reconstruida
-    matriz_reconstruida = zeros(dimensiones);
-    
-    % Dimensiones de la matriz original
-    filas = dimensiones(1);
-    columnas = dimensiones(2);
-    
-    % Inicializar índice
-    idx = 1;
-    
-    % Recorrer los coeficientes escaneados y reconstruir la matriz original
-    for i = 1:filas
-        for j = 1:columnas
-            % Verificar si idx excede la longitud de coeficientes_escaneados
-            if idx > numel(coeficientes_escaneados)
-                break; % Salir del bucle si idx excede la longitud de coeficientes_escaneados
-            end
-            
-            % Asignar el coeficiente escaneado a la matriz reconstruida
-            matriz_reconstruida(i, j) = coeficientes_escaneados{idx};
-            idx = idx + 1;
-        end
-    end
-end
-
-% Función para escribir el archivo JPEG
-function escribir_archivo_JPEG(codigos_huffman)
-    % Abrir el archivo para escritura
-    fid = fopen('imagen_codificada.bin', 'w');
-    
-    % Escribir cada código Huffman en el archivo
-    for i = 1:length(codigos_huffman)
-        % Convertir el código Huffman a binario
-        codigo_binario = dec2bin(codigos_huffman{i});
-        
-        % Escribir el código binario en el archivo
-        fwrite(fid, codigo_binario, 'ubit1');
-    end
-    
-    % Cerrar el archivo
-    fclose(fid);
-end
-
-% Función para el escaneo zigzag
-function salida = zigzag_escaneo(entrada)
-    [filas, columnas] = size(entrada);
-    salida = zeros(1, filas * columnas);
-    % Inicializar índices
-    idx = 1;
-    i = 1;
-    j = 1;
-    % Bandera para indicar dirección de escaneo
-    ascendente = true;
-    while idx <= filas * columnas
-        salida(idx) = entrada(i, j);
-        idx = idx + 1;
-        if ascendente
-            if j == columnas
-                i = i + 1;
-                ascendente = false;
-            elseif i == 1
-                j = j + 1;
-                ascendente = false;
-            else
-                i = i - 1;
-                j = j + 1;
-            end
+        if valor < 0
+            complemento2 = bin2dec(binario);
+            complemento2 = 2^8 - complemento2;
+            complemento2 = dec2bin(complemento2, 8);
         else
-            if i == filas
-                j = j + 1;
-                ascendente = true;
-            elseif j == 1
-                i = i + 1;
-                ascendente = true;
-            else
-                i = i + 1;
-                j = j - 1;
-            end
+            complemento2 = binario;
         end
+        
+        % Añadir a la matriz de valores
+        valores = [valores; indice, valor, bin2dec(complemento2)];
     end
 end
 
-% Función para la codificación de Huffman
-function codificacion_huffman = huffman_codificacion(simbolos)
-    % Calcular la frecuencia de cada símbolo
-    frecuencia = histcounts(simbolos, 0:255);
-    
-    % Crear la estructura de datos para los nodos del árbol de Huffman
-    nodos = struct('simbolo', {}, 'frecuencia', {}, 'codigo', {}, 'izquierda', {}, 'derecha', {});
-    for i = 1:length(frecuencia)
-        nodos(i).simbolo = i-1;
-        nodos(i).frecuencia = frecuencia(i);
-        nodos(i).codigo = '';
-    end
-    
-    % Construir el árbol de Huffman
-    while length(nodos) > 1
-        % Ordenar los nodos por frecuencia
-        [~, idx] = sort([nodos.frecuencia]);
-        nodos = nodos(idx);
-        
-        % Tomar los dos nodos con menor frecuencia
-        nodo1 = nodos(1);
-        nodo2 = nodos(2);
-        
-        % Asignar códigos binarios a los nodos
-        nodos(1).codigo = ['0', nodos(1).codigo];
-        nodos(2).codigo = ['1', nodos(2).codigo];
-        
-        % Crear un nuevo nodo con la suma de las frecuencias y asignarle hijos
-        nuevo_nodo.simbolo = -1;
-        nuevo_nodo.frecuencia = nodo1.frecuencia + nodo2.frecuencia;
-        nuevo_nodo.codigo = '';
-        nuevo_nodo.izquierda = nodo1;
-        nuevo_nodo.derecha = nodo2;
-        
-        % Eliminar los dos nodos tomados
-        nodos = nodos(3:end);
-        
-        % Agregar el nuevo nodo al final del vector
-        nodos(end+1) = nuevo_nodo;
-    end
-    
-    % Obtener las codificaciones de Huffman para cada símbolo
-    codificacion_huffman = cell(256, 1);
-    for i = 1:length(nodos)
-        % Asegurarse de que el índice sea positivo antes de usarlo
-        indice = max(1, nodos(i).simbolo + 1);
-        codificacion_huffman{indice} = nodos(i).codigo;
-    end
+% Ordenar la matriz por la primera columna (índice)
+valores = sortrows(valores, 1);
+
+% Crear las filas HTML con los valores ordenados
+for i = 1:size(valores, 1)
+    html = strcat(html, '<tr><td>', num2str(valores(i, 1)), '</td><td>', num2str(valores(i, 2)), '</td><td>', dec2bin(valores(i, 3), 8), '</td></tr>');
 end
+
+% Añadir EOB (End of Block) y 1010 al final
+html = strcat(html, '<tr><td>Bloque Final</td><td>1010</td><td></td></tr>');
+
+html = strcat(html, '</table></body></html>');
+
+% Guardar la tabla HTML en un archivo
+fid = fopen('valores_complemento2.html', 'w');
+fprintf(fid, '%s', html);
+fclose(fid);
+
+disp(['Bloque ' num2str(bloque_num) ' procesado. Puedes ver los resultados en el archivo "valores_complemento2.html".']);
